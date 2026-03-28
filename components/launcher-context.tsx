@@ -8,7 +8,7 @@ import React, {
   useCallback,
 } from "react";
 import { LauncherItem, NavigationLevel } from "@/lib/types";
-import { manifest } from "@/lib/manifest";
+import { manifest, getAllItems } from "@/lib/manifest";
 import { searchItems } from "@/lib/search";
 import { getRecents, getFavorites, addRecent } from "@/lib/storage";
 
@@ -94,15 +94,21 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
       // Or recents if at root
       if (currentLevel.item === null && recents.length > 0) {
         const recentItems = recents
-          .map((id) => currentItems.find((item) => item.id === id))
+          .map((id) => {
+            // Search all items for recents
+            const allItems = getAllItems();
+            return allItems.find((item) => item.id === id);
+          })
           .filter(Boolean) as LauncherItem[];
         return recentItems.slice(0, 8);
       }
       return currentItems;
     }
     
-    // Search within current level
-    return searchItems(query, currentItems, recents, favorites);
+    // When searching from root, search ALL items globally
+    // When searching from a sub-level, search only within that level
+    const searchSpace = currentLevel.item === null ? getAllItems() : currentItems;
+    return searchItems(query, searchSpace, recents, favorites);
   }, [currentLevel, query, recents, favorites]);
 
   // Drill into an item
