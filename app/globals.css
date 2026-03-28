@@ -36,3 +36,21 @@ body {
     transform: scale(1);
   }
 }
+
+/* Custom scrollbar */
+.launcher-results::-webkit-scrollbar {
+  width: 8px;
+}
+
+.launcher-results::-webkit-scrollbar-track {
+  background: rgba(2, 44, 34, 0.3);
+}
+
+.launcher-results::-webkit-scrollbar-thumb {
+  background: rgba(75, 156, 211, 0.3);
+  border-radius: 0;
+}
+
+.launcher-results::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 156, 211, 0.5);
+}
