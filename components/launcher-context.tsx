@@ -22,19 +22,20 @@ interface LauncherContextValue {
   activePrefix: string | null;
   setActivePrefix: (prefix: string | null) => void;
   navigationStack: NavigationLevel[];
+  setNavigationStack: React.Dispatch<React.SetStateAction<NavigationLevel[]>>;
   selectedIndex: number;
   setSelectedIndex: React.Dispatch<React.SetStateAction<number>>;
   recents: string[];
   favorites: string[];
   refreshStorage: () => void;
-  
+
   // Navigation actions
   drillInto: (item: LauncherItem) => void;
   goBack: () => void;
   goToRoot: () => void;
   selectItem: (item: LauncherItem) => void;
-  
-  // Current state
+
+  // Derived
   currentLevel: NavigationLevel;
   breadcrumbs: LauncherItem[];
   displayResults: LauncherItem[];
@@ -44,9 +45,8 @@ const LauncherContext = createContext<LauncherContextValue | null>(null);
 
 export function useLauncher() {
   const context = useContext(LauncherContext);
-  if (!context) {
+  if (!context)
     throw new Error("useLauncher must be used within LauncherProvider");
-  }
   return context;
 }
 
@@ -58,16 +58,10 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [recents, setRecents] = useState<string[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
-  
-  // Navigation stack - starts with root level
   const [navigationStack, setNavigationStack] = useState<NavigationLevel[]>([
-    {
-      item: null, // null = root level
-      results: manifest,
-    },
+    { item: null, results: manifest },
   ]);
 
-  // Refresh storage
   const refreshStorage = useCallback(() => {
     setRecents(getRecents());
     setFavorites(getFavorites());
@@ -77,154 +71,155 @@ export function LauncherProvider({ children }: { children: React.ReactNode }) {
     refreshStorage();
   }, [refreshStorage]);
 
-  // Current level is top of stack
   const currentLevel = navigationStack[navigationStack.length - 1];
-  
-  // Breadcrumbs from stack (excluding root)
+
   const breadcrumbs = navigationStack
-    .filter((level) => level.item !== null)
-    .map((level) => level.item as LauncherItem);
+    .filter((l) => l.item !== null)
+    .map((l) => l.item as LauncherItem);
 
-  // Compute display results based on current level and query
+  // Compute display results
   const displayResults = React.useMemo(() => {
-    const currentItems = currentLevel.results;
-    
-    if (!query.trim()) {
-      // No query - show all items at current level
-      // Or recents if at root
-      if (currentLevel.item === null && recents.length > 0) {
-        const recentItems = recents
-          .map((id) => {
-            // Search all items for recents
-            const allItems = getAllItems();
-            return allItems.find((item) => item.id === id);
-          })
-          .filter(Boolean) as LauncherItem[];
-        return recentItems.slice(0, 8);
+    const allFlat = getAllItems();
+
+    // Handle special sidebar categories
+    if (selectedCategory === "__recent") {
+      return recents
+        .map((id) => allFlat.find((i) => i.id === id))
+        .filter(Boolean) as LauncherItem[];
+    }
+    if (selectedCategory === "__favorites") {
+      return favorites
+        .map((id) => allFlat.find((i) => i.id === id))
+        .filter(Boolean) as LauncherItem[];
+    }
+
+    // Get items for current navigation level
+    let items = currentLevel.results;
+
+    // Filter by sidebar category if set and at root level
+    if (selectedCategory && currentLevel.item === null) {
+      items = items.filter((i) => i.category === selectedCategory);
+    }
+
+    // Apply search
+    if (query.trim()) {
+      // Check for prefix filter
+      const prefixMatch = query.match(/^(\w+):\s*(.*)/);
+      if (prefixMatch) {
+        const prefix = prefixMatch[1].toLowerCase();
+        const searchQuery = prefixMatch[2];
+        // Find matching items by prefix
+        const prefixItems = allFlat.filter((item) =>
+          item.prefixes?.some((p) => p.toLowerCase().startsWith(prefix + ":"))
+        );
+        if (prefixItems.length > 0) {
+          // Get children of matched prefix items
+          const scopedItems = prefixItems.flatMap(
+            (i) => i.children || [i]
+          );
+          return searchQuery
+            ? searchItems(searchQuery, scopedItems, recents, favorites)
+            : scopedItems;
+        }
       }
-      return currentItems;
-    }
-    
-    // When searching from root, search ALL items globally
-    // When searching from a sub-level, search only within that level
-    const searchSpace = currentLevel.item === null ? getAllItems() : currentItems;
-    return searchItems(query, searchSpace, recents, favorites);
-  }, [currentLevel, query, recents, favorites]);
 
-  // Drill into an item
-  const drillInto = useCallback((item: LauncherItem) => {
-    if (!item.children || item.children.length === 0) {
-      // No children - this is a final action
-      return;
+      // Global search when at root, scoped search when drilled down
+      const searchSpace =
+        currentLevel.item === null ? allFlat : items;
+      return searchItems(query, searchSpace, recents, favorites);
     }
-    
-    // Push new level onto stack
-    setNavigationStack((stack) => [
-      ...stack,
-      {
-        item,
-        results: item.children || [],
-      },
-    ]);
-    
-    // Reset state
-    setQuery("");
-    setSelectedIndex(0);
-    setActivePrefix(null);
-  }, []);
 
-  // Go back one level
-  const goBack = useCallback(() => {
-    if (navigationStack.length > 1) {
-      setNavigationStack((stack) => stack.slice(0, -1));
+    // No query - show current level items
+    // At root with no category filter, show featured
+    if (currentLevel.item === null && !selectedCategory) {
+      return items;
+    }
+
+    return items;
+  }, [currentLevel, query, selectedCategory, recents, favorites]);
+
+  const drillInto = useCallback(
+    (item: LauncherItem) => {
+      if (!item.children?.length) return;
+      setNavigationStack((s) => [...s, { item, results: item.children! }]);
       setQuery("");
       setSelectedIndex(0);
-      setActivePrefix(null);
+      setSelectedCategory(null);
+    },
+    []
+  );
+
+  const goBack = useCallback(() => {
+    if (navigationStack.length > 1) {
+      setNavigationStack((s) => s.slice(0, -1));
+      setQuery("");
+      setSelectedIndex(0);
     } else {
-      // At root - close launcher
       setOpen(false);
     }
   }, [navigationStack.length]);
 
-  // Jump to root
   const goToRoot = useCallback(() => {
-    setNavigationStack([
-      {
-        item: null,
-        results: manifest,
-      },
-    ]);
+    setNavigationStack([{ item: null, results: manifest }]);
     setQuery("");
     setSelectedIndex(0);
-    setActivePrefix(null);
+    setSelectedCategory(null);
   }, []);
 
-  // Select/activate an item
   const selectItem = useCallback(
     (item: LauncherItem) => {
-      if (item.children && item.children.length > 0) {
-        // Has children - drill in
+      if (item.children?.length) {
         drillInto(item);
       } else {
-        // Final action
         addRecent(item.id);
         refreshStorage();
-        
         if (item.url) {
           window.open(item.url, "_blank");
         } else if (item.action) {
           item.action();
-        } else {
-          console.log("Selected:", item.name);
         }
-        
-        // Close launcher after action
         setOpen(false);
-        
-        // Reset state
-        setTimeout(() => {
-          goToRoot();
-        }, 200);
+        setTimeout(goToRoot, 200);
       }
     },
     [drillInto, refreshStorage, goToRoot]
   );
 
-  // Reset when closing
+  // Reset on close
   useEffect(() => {
     if (!open) {
-      setTimeout(() => {
-        goToRoot();
-      }, 200);
+      const t = setTimeout(goToRoot, 200);
+      return () => clearTimeout(t);
     }
   }, [open, goToRoot]);
 
-  const value: LauncherContextValue = {
-    open,
-    setOpen,
-    query,
-    setQuery,
-    selectedCategory,
-    setSelectedCategory,
-    activePrefix,
-    setActivePrefix,
-    navigationStack,
-    selectedIndex,
-    setSelectedIndex,
-    recents,
-    favorites,
-    refreshStorage,
-    drillInto,
-    goBack,
-    goToRoot,
-    selectItem,
-    currentLevel,
-    breadcrumbs,
-    displayResults,
-  };
-
   return (
-    <LauncherContext.Provider value={value}>
+    <LauncherContext.Provider
+      value={{
+        open,
+        setOpen,
+        query,
+        setQuery,
+        selectedCategory,
+        setSelectedCategory,
+        activePrefix,
+        setActivePrefix,
+        navigationStack,
+        setNavigationStack,
+        selectedIndex,
+        setSelectedIndex,
+        recents,
+        favorites,
+        refreshStorage,
+        drillInto,
+        goBack,
+        goToRoot,
+        selectItem,
+        currentLevel,
+        breadcrumbs,
+        displayResults,
+      }}
+    >
       {children}
     </LauncherContext.Provider>
   );

@@ -1,29 +1,24 @@
 "use client";
 
 import { Diamond } from "@phosphor-icons/react";
+import { useLauncher } from "./launcher-context";
 
 export function LauncherFooter() {
+  const { displayResults, breadcrumbs } = useLauncher();
+
   return (
-    <div className="border-t border-green-900/30 px-4 py-2 flex items-center justify-between bg-green-950/50">
+    <div className="border-t border-[#0a2e1f] px-4 py-2 flex items-center justify-between bg-[#010f0a]/80">
       {/* Keyboard hints */}
-      <div className="flex items-center gap-4 text-xs font-mono text-green-700">
-        <div className="flex items-center gap-1.5">
-          <kbd className="px-1.5 py-0.5 bg-green-900/30 border border-green-800/30">↑↓</kbd>
-          <span>Navigate</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <kbd className="px-1.5 py-0.5 bg-green-900/30 border border-green-800/30">↵</kbd>
-          <span>Open</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <kbd className="px-1.5 py-0.5 bg-green-900/30 border border-green-800/30">⎋</kbd>
-          <span>Back</span>
-        </div>
+      <div className="flex items-center gap-3 text-[11px] font-mono text-[#3d7a6e]">
+        <span><kbd>↑↓</kbd> Navigate</span>
+        <span><kbd>↵</kbd> {breadcrumbs.length > 0 || displayResults.some(i => i.children?.length) ? "Drill in" : "Open"}</span>
+        <span><kbd>⎋</kbd> {breadcrumbs.length > 0 ? "Back" : "Close"}</span>
+        <span><kbd>⌫</kbd> Back</span>
       </div>
 
       {/* Branding */}
-      <div className="flex items-center gap-1.5 text-xs font-mono text-green-800">
-        <Diamond size={12} weight="fill" />
+      <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#0a2e1f]">
+        <Diamond size={10} weight="fill" />
         <span>sports launcher</span>
       </div>
     </div>

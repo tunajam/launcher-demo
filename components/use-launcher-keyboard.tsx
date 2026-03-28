@@ -15,80 +15,63 @@ export function useLauncherKeyboard() {
     goBack,
   } = useLauncher();
 
+  // Global ⌘K toggle
   useEffect(() => {
-    // Global ⌘K handler
-    function handleGlobalKey(e: KeyboardEvent) {
+    function handleGlobal(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setOpen(!open);
       }
     }
-
-    window.addEventListener("keydown", handleGlobalKey);
-    return () => window.removeEventListener("keydown", handleGlobalKey);
+    window.addEventListener("keydown", handleGlobal);
+    return () => window.removeEventListener("keydown", handleGlobal);
   }, [open, setOpen]);
 
+  // Launcher-specific keys when open
   useEffect(() => {
     if (!open) return;
 
     function handleKey(e: KeyboardEvent) {
-      // Escape - go back or close
-      if (e.key === "Escape") {
-        e.preventDefault();
-        goBack();
-        return;
-      }
+      switch (e.key) {
+        case "Escape":
+          e.preventDefault();
+          goBack();
+          break;
 
-      // Arrow Down - next item
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev < displayResults.length - 1 ? prev + 1 : 0
-        );
-        return;
-      }
+        case "ArrowDown":
+          e.preventDefault();
+          setSelectedIndex((prev) =>
+            prev < displayResults.length - 1 ? prev + 1 : 0
+          );
+          break;
 
-      // Arrow Up - previous item
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev > 0 ? prev - 1 : displayResults.length - 1
-        );
-        return;
-      }
+        case "ArrowUp":
+          e.preventDefault();
+          setSelectedIndex((prev) =>
+            prev > 0 ? prev - 1 : displayResults.length - 1
+          );
+          break;
 
-      // Enter - select current item
-      if (e.key === "Enter") {
-        e.preventDefault();
-        const currentItem = displayResults[selectedIndex];
-        if (currentItem) {
-          selectItem(currentItem);
-        }
-        return;
-      }
+        case "Enter":
+          e.preventDefault();
+          if (displayResults[selectedIndex]) {
+            selectItem(displayResults[selectedIndex]);
+          }
+          break;
 
-      // Tab - autocomplete prefix (if applicable)
-      if (e.key === "Tab") {
-        e.preventDefault();
-        // TODO: Implement prefix autocomplete
-        return;
+        case "Tab":
+          e.preventDefault();
+          // Could implement prefix autocomplete here
+          break;
       }
     }
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [
-    open,
-    displayResults,
-    selectedIndex,
-    setSelectedIndex,
-    selectItem,
-    goBack,
-    query,
-  ]);
+  }, [open, displayResults, selectedIndex, setSelectedIndex, selectItem, goBack, query]);
 
-  // Reset selected index when results change
+  // Reset index when results change
   useEffect(() => {
     setSelectedIndex(0);
-  }, [displayResults, setSelectedIndex]);
+  }, [displayResults.length, setSelectedIndex]);
 }

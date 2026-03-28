@@ -16,23 +16,13 @@ export interface LauncherItem {
 }
 
 export interface NavigationLevel {
-  item: LauncherItem | null; // null for root level
+  item: LauncherItem | null; // null for root
   results: LauncherItem[];
 }
 
-export interface LauncherState {
-  open: boolean;
-  query: string;
-  selectedCategory: string | null;
-  activePrefix: string | null;
-  navigationStack: NavigationLevel[];
-  selectedIndex: number;
-  recents: string[]; // item ids
-  favorites: string[]; // item ids
-}
-
-export type Category = {
+export interface Category {
   id: string;
   name: string;
+  icon?: Icon;
   isDivider?: boolean;
-};
+}
