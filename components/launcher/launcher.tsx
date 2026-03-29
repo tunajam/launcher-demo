@@ -39,13 +39,15 @@ export function Launcher() {
     }
   }, [displayResults, depth]);
 
-  // Refocus cmdk input after navigation changes
+  // Focus cmdk input when launcher opens or navigation changes
   useEffect(() => {
     if (!open) return;
-    requestAnimationFrame(() => {
+    // Delay to ensure Dialog portal has rendered
+    const timer = setTimeout(() => {
       const input = document.querySelector("[cmdk-input]") as HTMLInputElement;
       input?.focus();
-    });
+    }, 50);
+    return () => clearTimeout(timer);
   }, [navigationStack, open]);
 
   // ⌘K global shortcut + Escape/Enter override
