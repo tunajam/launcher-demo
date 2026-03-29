@@ -32,6 +32,45 @@ export function createFuseInstance(items: LauncherItem[], weights = defaultWeigh
   });
 }
 
+/**
+ * Flatten an item tree into a flat list (all descendants).
+ */
+export function flattenItems(items: LauncherItem[]): LauncherItem[] {
+  const result: LauncherItem[] = [];
+  for (const item of items) {
+    result.push(item);
+    if (item.children) {
+      result.push(...flattenItems(item.children));
+    }
+  }
+  return result;
+}
+
+/**
+ * Parse prefix filters from query. E.g. "nfl:panthers" → { prefix: "nfl:", query: "panthers" }
+ */
+function parsePrefixFilter(
+  query: string,
+  allItems: LauncherItem[]
+): { filteredItems: LauncherItem[] | null; cleanQuery: string } {
+  const colonIdx = query.indexOf(":");
+  if (colonIdx < 1 || colonIdx > 10) return { filteredItems: null, cleanQuery: query };
+
+  const prefix = query.slice(0, colonIdx + 1).toLowerCase();
+  const cleanQuery = query.slice(colonIdx + 1).trim();
+
+  for (const item of allItems) {
+    if (item.prefixes?.some((p) => p.toLowerCase() === prefix)) {
+      return {
+        filteredItems: item.children ?? [item],
+        cleanQuery,
+      };
+    }
+  }
+
+  return { filteredItems: null, cleanQuery: query };
+}
+
 export function searchItems(
   query: string,
   items: LauncherItem[],
@@ -63,8 +102,18 @@ export function searchItems(
     return combined.length > 0 ? combined : items.slice(0, 10);
   }
 
-  const fuse = createFuseInstance(items, weights);
-  const results = fuse.search(query);
+  // Check for prefix filter (e.g. "nfl:panthers")
+  const { filteredItems, cleanQuery } = parsePrefixFilter(query, items);
+  const searchPool = filteredItems ?? items;
+  const searchQuery = filteredItems ? cleanQuery : query;
+
+  // If prefix matched but no remaining query, return all items in that scope
+  if (filteredItems && !searchQuery.trim()) {
+    return searchPool;
+  }
+
+  const fuse = createFuseInstance(searchPool, weights);
+  const results = fuse.search(searchQuery || query);
 
   // Sort by exact match > starts with > fuzzy score
   return results

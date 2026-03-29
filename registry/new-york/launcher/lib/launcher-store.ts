@@ -1,7 +1,7 @@
 import { create, type StateCreator, type StoreApi, type UseBoundStore } from "zustand";
 import { persist } from "zustand/middleware";
 import type { LauncherItem, NavigationLevel } from "./launcher-types";
-import { searchItems, defaultWeights, type SearchWeights } from "./launcher-search";
+import { searchItems, flattenItems, defaultWeights, type SearchWeights } from "./launcher-search";
 
 interface LauncherConfig {
   manifest: LauncherItem[];
@@ -190,7 +190,13 @@ export function createLauncherStore(config: LauncherConfig): LauncherStore {
           .map((id) => allItems.find((i) => i.id === id))
           .filter(Boolean) as LauncherItem[];
       }
-      if (query.trim()) return searchItems(query, baseResults, recents, favorites, searchWeights);
+      if (query.trim()) {
+        // When drilled down, search all descendants (not just immediate children)
+        const searchPool = currentLevel.item
+          ? flattenItems(baseResults)
+          : baseResults;
+        return searchItems(query, searchPool, recents, favorites, searchWeights);
+      }
       if (selectedCategory && currentLevel.item === null)
         return baseResults.filter((i) => i.category === selectedCategory);
       return baseResults;
