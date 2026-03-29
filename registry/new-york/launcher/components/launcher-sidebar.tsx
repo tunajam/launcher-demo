@@ -1,3 +1,4 @@
+import type { LauncherStore } from "../lib/launcher-store";
 "use client";
 
 import React from "react";
@@ -11,7 +12,7 @@ import type { Icon } from "@phosphor-icons/react";
 import type { Category } from "../lib/launcher-types";
 
 interface LauncherSidebarProps {
-  store: any; // Zustand store from createLauncherStore
+  store: LauncherStore;
   categories?: Category[];
 }
 
@@ -22,8 +23,8 @@ const defaultCategories: Category[] = [
 ];
 
 export function LauncherSidebar({ store, categories = defaultCategories }: LauncherSidebarProps) {
-  const selectedCategory = store((s: any) => s.selectedCategory);
-  const setSelectedCategory = store((s: any) => s.setSelectedCategory);
+  const selectedCategory = store((s) => s.selectedCategory);
+  const setSelectedCategory = store((s) => s.setSelectedCategory);
 
   return (
     <nav

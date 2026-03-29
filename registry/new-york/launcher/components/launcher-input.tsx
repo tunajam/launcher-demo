@@ -1,3 +1,4 @@
+import type { LauncherStore } from "../lib/launcher-store";
 "use client";
 
 import React, { useMemo } from "react";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Diamond } from "@phosphor-icons/react";
 
 interface LauncherInputProps {
-  store: any; // Zustand store from createLauncherStore
+  store: LauncherStore;
   branding?: {
     icon?: React.ReactNode;
     label?: string;
@@ -14,19 +15,19 @@ interface LauncherInputProps {
 }
 
 export function LauncherInput({ store, branding }: LauncherInputProps) {
-  const query = store((s: any) => s.query);
-  const setQuery = store((s: any) => s.setQuery);
-  const resetNavigation = store((s: any) => s.resetNavigation);
-  const popNavigation = store((s: any) => s.popNavigation);
-  const setNavigationStack = store((s: any) => s.setNavigationStack);
-  const navigationStack = store((s: any) => s.navigationStack);
+  const query = store((s) => s.query);
+  const setQuery = store((s) => s.setQuery);
+  const resetNavigation = store((s) => s.resetNavigation);
+  const popNavigation = store((s) => s.popNavigation);
+  const setNavigationStack = store((s) => s.setNavigationStack);
+  const navigationStack = store((s) => s.navigationStack);
   const breadcrumbs = useMemo(
-    () => navigationStack.filter((l: any) => l.item).map((l: any) => l.item!.name),
+    () => navigationStack.filter((l) => l.item).map((l) => l.item!.name),
     [navigationStack]
   );
 
   const navigateToBreadcrumb = (index: number) => {
-    setNavigationStack((stack: any) => stack.slice(0, index + 2));
+    setNavigationStack((stack) => stack.slice(0, index + 2));
   };
 
   const defaultBranding = {

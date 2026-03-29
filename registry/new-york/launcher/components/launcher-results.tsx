@@ -1,3 +1,4 @@
+import type { LauncherStore } from "../lib/launcher-store";
 "use client";
 
 import React, { memo } from "react";
@@ -77,17 +78,17 @@ const LauncherItemRow = memo(
 LauncherItemRow.displayName = "LauncherItemRow";
 
 interface LauncherResultsProps {
-  store: any; // Zustand store from createLauncherStore
+  store: LauncherStore;
 }
 
 export function LauncherResults({ store }: LauncherResultsProps) {
-  const navigationStack = store((s: any) => s.navigationStack);
-  const favorites = store((s: any) => s.favorites);
-  const selectItem = store((s: any) => s.selectItem);
-  const toggleFavorite = store((s: any) => s.toggleFavorite);
-  const query = store((s: any) => s.query);
-  const selectedCategory = store((s: any) => s.selectedCategory);
-  const recents = store((s: any) => s.recents);
+  const navigationStack = store((s) => s.navigationStack);
+  const favorites = store((s) => s.favorites);
+  const selectItem = store((s) => s.selectItem);
+  const toggleFavorite = store((s) => s.toggleFavorite);
+  const query = store((s) => s.query);
+  const selectedCategory = store((s) => s.selectedCategory);
+  const recents = store((s) => s.recents);
   const displayResults = React.useMemo(
     () => store.getState().getDisplayResults(),
     [store, navigationStack, query, selectedCategory, favorites, recents]

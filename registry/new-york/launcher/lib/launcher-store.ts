@@ -1,4 +1,4 @@
-import { create, type StateCreator } from "zustand";
+import { create, type StateCreator, type StoreApi, type UseBoundStore } from "zustand";
 import { persist } from "zustand/middleware";
 import type { LauncherItem, NavigationLevel } from "./launcher-types";
 import { searchItems, defaultWeights, type SearchWeights } from "./launcher-search";
@@ -53,7 +53,7 @@ function buildNavigationPath(
   return path;
 }
 
-interface LauncherState {
+export interface LauncherState {
   open: boolean;
   query: string;
   selectedCategory: string | null;
@@ -79,7 +79,10 @@ interface LauncherState {
   getDisplayResults: () => LauncherItem[];
 }
 
-export function createLauncherStore(config: LauncherConfig) {
+/** The typed store hook returned by createLauncherStore */
+export type LauncherStore = UseBoundStore<StoreApi<LauncherState>>;
+
+export function createLauncherStore(config: LauncherConfig): LauncherStore {
   const { manifest, searchWeights = defaultWeights, persistKey = "launcher-storage" } = config;
 
   const storeDefinition: StateCreator<LauncherState, [], []> = (set, get) => ({

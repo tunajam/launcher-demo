@@ -1,10 +1,11 @@
+import type { LauncherStore } from "../lib/launcher-store";
 "use client";
 
 import { useMemo } from "react";
 import { Diamond } from "@phosphor-icons/react";
 
 interface LauncherFooterProps {
-  store: any; // Zustand store from createLauncherStore
+  store: LauncherStore;
   branding?: {
     icon?: React.ReactNode;
     label?: string;
@@ -12,9 +13,9 @@ interface LauncherFooterProps {
 }
 
 export function LauncherFooter({ store, branding }: LauncherFooterProps) {
-  const navigationStack = store((s: any) => s.navigationStack);
+  const navigationStack = store((s) => s.navigationStack);
   const breadcrumbs = useMemo(
-    () => navigationStack.filter((l: any) => l.item).map((l: any) => l.item!.name),
+    () => navigationStack.filter((l) => l.item).map((l) => l.item!.name),
     [navigationStack]
   );
 

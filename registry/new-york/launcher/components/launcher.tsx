@@ -1,3 +1,4 @@
+import type { LauncherStore } from "../lib/launcher-store";
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -9,7 +10,7 @@ import { LauncherFooter } from "./launcher-footer";
 import type { Category } from "../lib/launcher-types";
 
 interface LauncherProps {
-  store: any; // Zustand store from createLauncherStore
+  store: LauncherStore;
   categories?: Category[];
   branding?: {
     icon?: React.ReactNode;
@@ -18,17 +19,17 @@ interface LauncherProps {
 }
 
 export function Launcher({ store, categories, branding }: LauncherProps) {
-  const open = store((s: any) => s.open);
-  const setOpen = store((s: any) => s.setOpen);
-  const popNavigation = store((s: any) => s.popNavigation);
-  const navigationStack = store((s: any) => s.navigationStack);
-  const query = store((s: any) => s.query);
-  const selectedCategory = store((s: any) => s.selectedCategory);
-  const recents = store((s: any) => s.recents);
-  const favorites = store((s: any) => s.favorites);
+  const open = store((s) => s.open);
+  const setOpen = store((s) => s.setOpen);
+  const popNavigation = store((s) => s.popNavigation);
+  const navigationStack = store((s) => s.navigationStack);
+  const query = store((s) => s.query);
+  const selectedCategory = store((s) => s.selectedCategory);
+  const recents = store((s) => s.recents);
+  const favorites = store((s) => s.favorites);
 
   const breadcrumbs = useMemo(
-    () => navigationStack.filter((l: any) => l.item).map((l: any) => l.item!.name),
+    () => navigationStack.filter((l) => l.item).map((l) => l.item!.name),
     [navigationStack]
   );
 
