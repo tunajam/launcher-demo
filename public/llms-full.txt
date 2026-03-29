@@ -1,0 +1,655 @@
+# Launcher — Complete Documentation
+
+> A Raycast-style ⌘K command launcher with hierarchical drill-down, fuzzy search, sidebar categories, recents, and favorites. Built on shadcn Command + Dialog primitives with Zustand state management.
+
+## Table of Contents
+1. Installation
+2. Quick Start
+3. Core Concepts
+4. Component API
+5. Store API
+6. Type Definitions
+7. Customization
+8. Integration Patterns
+9. Testing
+10. Architecture
+
+---
+
+## 1. Installation
+
+```bash
+npx shadcn add https://launcher.tunajam.com/r/launcher.json
+```
+
+This will install:
+- All launcher components
+- Store factory (`createLauncherStore`)
+- Search utilities
+- Type definitions
+
+### Dependencies
+
+The launcher requires these packages:
+
+```json
+{
+  "dependencies": {
+    "zustand": "^5.0.0",
+    "fuse.js": "^7.0.0",
+    "@phosphor-icons/react": "^2.0.0"
+  }
+}
+```
+
+And these shadcn components:
+- `command`
+- `dialog`
+- `badge`
+- `separator`
+
+---
+
+## 2. Quick Start
+
+```tsx
+import { Launcher, createLauncherStore, type LauncherItem } from "@/registry/new-york/launcher/launcher";
+import { Users, User, Settings } from "@phosphor-icons/react";
+
+// 1. Define your data
+const manifest: LauncherItem[] = [
+  {
+    id: "teams",
+    name: "Teams",
+    description: "Manage your teams",
+    icon: Users,
+    category: "Apps",
+    tags: ["people", "teams"],
+    children: [
+      {
+        id: "teams-my",
+        name: "My Teams",
+        description: "Your team memberships",
+        icon: User,
+        category: "Apps",
+        tags: ["my", "teams"],
+      },
+    ],
+  },
+];
+
+// 2. Create the store
+const useLauncherStore = createLauncherStore({ manifest });
+
+// 3. Add to your layout
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <Launcher store={useLauncherStore} />
+      </body>
+    </html>
+  );
+}
+```
+
+Press `⌘K` (or `Ctrl+K`) to open the launcher.
+
+---
+
+## 3. Core Concepts
+
+### Hierarchical Navigation
+
+The launcher supports unlimited nesting via the `children` property:
+
+```tsx
+{
+  id: "settings",
+  name: "Settings",
+  icon: Settings,
+  category: "System",
+  tags: ["config"],
+  children: [
+    {
+      id: "settings-profile",
+      name: "Profile",
+      icon: User,
+      category: "System",
+      tags: ["account"],
+      children: [
+        {
+          id: "settings-profile-photo",
+          name: "Change Photo",
+          icon: Camera,
+          category: "System",
+          tags: ["avatar"],
+          action: () => console.log("change photo"),
+        },
+      ],
+    },
+  ],
+}
+```
+
+### Actions vs URLs vs Children
+
+Items can have:
+- **`children`**: Drill into a submenu
+- **`action`**: Execute a function (closes launcher)
+- **`url`**: Open external link in new tab (closes launcher)
+
+Precedence: `children` > `action` = `url`
+
+### Search
+
+Search is powered by Fuse.js with weighted fields:
+
+```ts
+const defaultWeights = {
+  name: 3.0,       // Exact matches prioritized
+  aliases: 2.0,    // Alternative names
+  keywords: 1.5,   // Related terms
+  tags: 1.0,       // Categories/labels
+  description: 0.5 // Full text
+};
+```
+
+### Recents & Favorites
+
+- **Recents**: Last 20 selected items (auto-populated)
+- **Favorites**: User-starred items (persist to localStorage)
+
+Both are accessible via special sidebar categories:
+- `__recent`
+- `__favorites`
+
+---
+
+## 4. Component API
+
+### `<Launcher />`
+
+Main component that orchestrates all subcomponents.
+
+```tsx
+interface LauncherProps {
+  store: ReturnType<typeof createLauncherStore>;
+  categories?: Category[];
+  branding?: {
+    icon?: React.ReactNode;
+    label?: string;
+  };
+}
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `store` | Zustand Store | Required | Store from `createLauncherStore()` |
+| `categories` | `Category[]` | `[All, Recent, Favorites]` | Sidebar category list |
+| `branding` | `{ icon, label }` | `{ icon: Diamond, label: "launcher" }` | Header/footer branding |
+
+**Example:**
+
+```tsx
+<Launcher 
+  store={useLauncherStore} 
+  categories={customCategories}
+  branding={{ icon: <Rocket />, label: "my-app" }}
+/>
+```
+
+### `<LauncherInput />`
+
+Search input with breadcrumbs.
+
+```tsx
+interface LauncherInputProps {
+  store: ReturnType<typeof createLauncherStore>;
+  branding?: { icon?: React.ReactNode; label?: string; };
+}
+```
+
+### `<LauncherSidebar />`
+
+Category navigation sidebar.
+
+```tsx
+interface LauncherSidebarProps {
+  store: ReturnType<typeof createLauncherStore>;
+  categories?: Category[];
+}
+```
+
+### `<LauncherResults />`
+
+Scrollable results list with favorites.
+
+```tsx
+interface LauncherResultsProps {
+  store: ReturnType<typeof createLauncherStore>;
+}
+```
+
+### `<LauncherFooter />`
+
+Keyboard shortcuts hint bar.
+
+```tsx
+interface LauncherFooterProps {
+  store: ReturnType<typeof createLauncherStore>;
+  branding?: { icon?: React.ReactNode; label?: string; };
+}
+```
+
+---
+
+## 5. Store API
+
+### `createLauncherStore(config)`
+
+Factory function that returns a Zustand store.
+
+```ts
+interface LauncherConfig {
+  manifest: LauncherItem[];
+  searchWeights?: SearchWeights;
+  persistKey?: string;
+}
+
+const useLauncherStore = createLauncherStore(config);
+```
+
+**Config:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `manifest` | `LauncherItem[]` | Required | Root-level items |
+| `searchWeights` | `SearchWeights` | `defaultWeights` | Fuse.js field weights |
+| `persistKey` | `string` | `"launcher-storage"` | localStorage key |
+
+### State
+
+```ts
+{
+  open: boolean;                    // Dialog open/closed
+  query: string;                    // Search query
+  selectedCategory: string | null;  // Active sidebar filter
+  navigationStack: NavigationLevel[]; // Breadcrumb trail
+  recents: string[];                // Recent item IDs
+  favorites: string[];              // Favorited item IDs
+}
+```
+
+### Actions
+
+```ts
+setOpen(open: boolean): void
+setQuery(query: string): void
+setSelectedCategory(category: string | null): void
+selectItem(item: LauncherItem): void
+pushNavigation(item: LauncherItem): void
+popNavigation(): void
+resetNavigation(): void
+toggleFavorite(id: string): void
+setNavigationStack(updater): void
+getBreadcrumbs(): string[]
+getDisplayResults(): LauncherItem[]
+```
+
+**Example:**
+
+```tsx
+const openLauncher = () => useLauncherStore.getState().setOpen(true);
+const addToFavorites = (id: string) => useLauncherStore.getState().toggleFavorite(id);
+```
+
+---
+
+## 6. Type Definitions
+
+### `LauncherItem`
+
+```ts
+interface LauncherItem {
+  id: string;                    // Unique identifier
+  name: string;                  // Display name
+  description?: string;          // Subtitle
+  icon: PhosphorIcon;            // @phosphor-icons/react icon
+  category: string;              // Group label
+  tags: string[];                // Search tags
+  aliases?: string[];            // Alternative names
+  keywords?: string[];           // Related search terms
+  prefixes?: string[];           // Command-style prefixes (e.g., "/edit")
+  children?: LauncherItem[];     // Nested items
+  action?: () => void;           // Callback (closes launcher)
+  url?: string;                  // External link (opens in new tab)
+}
+```
+
+### `Category`
+
+```ts
+interface Category {
+  id: string;           // Must match LauncherItem.category
+  name: string;         // Display label
+  icon?: PhosphorIcon;  // Sidebar icon
+  isDivider?: boolean;  // Render as separator
+}
+```
+
+### `NavigationLevel`
+
+```ts
+interface NavigationLevel {
+  item: LauncherItem | null;  // null = root level
+  results: LauncherItem[];    // Visible items at this level
+}
+```
+
+### `SearchWeights`
+
+```ts
+interface SearchWeights {
+  name: number;
+  aliases: number;
+  keywords: number;
+  tags: number;
+  description: number;
+}
+```
+
+---
+
+## 7. Customization
+
+### Custom Categories
+
+```tsx
+import { SquaresFour, Folder, Settings, Star, ClockCounterClockwise } from "@phosphor-icons/react";
+
+const categories: Category[] = [
+  { id: "all", name: "All", icon: SquaresFour },
+  { id: "__recent", name: "Recent", icon: ClockCounterClockwise },
+  { id: "__favorites", name: "Favorites", icon: Star },
+  { isDivider: true },
+  { id: "Files", name: "Files", icon: Folder },
+  { id: "Settings", name: "Settings", icon: Settings },
+];
+
+<Launcher store={useLauncherStore} categories={categories} />
+```
+
+### Custom Search Weights
+
+```tsx
+const useLauncherStore = createLauncherStore({
+  manifest,
+  searchWeights: {
+    name: 4.0,
+    aliases: 3.0,
+    keywords: 2.0,
+    tags: 1.5,
+    description: 0.3,
+  },
+});
+```
+
+### Custom Branding
+
+```tsx
+import { Rocket } from "@phosphor-icons/react";
+
+const branding = {
+  icon: <Rocket size={12} weight="fill" className="text-primary/40" />,
+  label: "acme-launcher",
+};
+
+<Launcher store={useLauncherStore} branding={branding} />
+```
+
+### Styling
+
+All components use shadcn tokens. Override via Tailwind classes or CSS variables:
+
+```css
+/* Scrollbar styling */
+.launcher-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.launcher-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+/* Custom dialog positioning */
+[role="dialog"][data-launcher] {
+  top: 10% !important;
+}
+```
+
+---
+
+## 8. Integration Patterns
+
+### Next.js App Router
+
+```tsx
+// app/layout.tsx
+import { Launcher, createLauncherStore } from "@/registry/new-york/launcher/launcher";
+import { manifest } from "@/lib/launcher-manifest";
+
+const useLauncherStore = createLauncherStore({ manifest });
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <Launcher store={useLauncherStore} />
+      </body>
+    </html>
+  );
+}
+```
+
+### Dynamic Manifest (Server Actions)
+
+```tsx
+"use client";
+
+import { Launcher, createLauncherStore } from "@/registry/new-york/launcher/launcher";
+import { useState, useEffect } from "react";
+
+export function DynamicLauncher() {
+  const [manifest, setManifest] = useState([]);
+  
+  useEffect(() => {
+    fetch("/api/launcher-data")
+      .then(res => res.json())
+      .then(setManifest);
+  }, []);
+
+  const useLauncherStore = createLauncherStore({ manifest });
+  
+  return <Launcher store={useLauncherStore} />;
+}
+```
+
+### Programmatic Control
+
+```tsx
+"use client";
+
+import { Launcher, createLauncherStore } from "@/registry/new-york/launcher/launcher";
+import { useEffect } from "react";
+
+const useLauncherStore = createLauncherStore({ manifest });
+
+export function App() {
+  useEffect(() => {
+    // Open launcher on mount
+    useLauncherStore.getState().setOpen(true);
+    
+    // Programmatically navigate
+    const settingsItem = manifest.find(i => i.id === "settings");
+    if (settingsItem) {
+      useLauncherStore.getState().selectItem(settingsItem);
+    }
+  }, []);
+
+  return <Launcher store={useLauncherStore} />;
+}
+```
+
+---
+
+## 9. Testing
+
+### Vitest Example
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import { Launcher, createLauncherStore } from "@/registry/new-york/launcher/launcher";
+import { describe, it, expect } from "vitest";
+
+describe("Launcher", () => {
+  it("renders and opens on ⌘K", async () => {
+    const useLauncherStore = createLauncherStore({ manifest: [] });
+    render(<Launcher store={useLauncherStore} />);
+    
+    // Trigger keyboard shortcut
+    fireEvent.keyDown(document, { key: "k", metaKey: true });
+    
+    expect(screen.getByRole("dialog")).toBeVisible();
+  });
+});
+```
+
+### Playwright Example
+
+```ts
+import { test, expect } from "@playwright/test";
+
+test("launcher opens with ⌘K", async ({ page }) => {
+  await page.goto("/");
+  
+  await page.keyboard.press("Meta+K");
+  
+  await expect(page.locator("[role='dialog']")).toBeVisible();
+});
+```
+
+**Note:** The store automatically disables localStorage persistence when `NODE_ENV === "test"` for deterministic testing.
+
+---
+
+## 10. Architecture
+
+### Component Hierarchy
+
+```
+<Launcher>                    # Root container
+  <CommandDialog>             # shadcn Dialog wrapper
+    <Command>                 # shadcn Command (cmdk)
+      <LauncherInput>         # Search + breadcrumbs
+      <LauncherSidebar>       # Category filters
+      <LauncherResults>       # Item list
+      <LauncherFooter>        # Keyboard hints
+```
+
+### State Flow
+
+```
+User input (⌘K, search, click)
+  → Zustand store action
+  → State update
+  → Component re-render (via Zustand selectors)
+  → UI reflects new state
+```
+
+### Search Pipeline
+
+```
+query → searchItems()
+  → Fuse.js search with weights
+  → Sort by: exact match > starts-with > fuzzy score
+  → Boost recents (+50) and favorites (+100)
+  → Return sorted results
+```
+
+### Navigation Stack
+
+```
+Root (item: null)
+  → Drill into "Settings" (item: settings, results: settings.children)
+  → Drill into "Profile" (item: profile, results: profile.children)
+```
+
+Escape pops the stack. Breadcrumbs are clickable to jump to any level.
+
+### Persistence
+
+```
+localStorage["launcher-storage"] = {
+  recents: ["item-id-1", "item-id-2", ...],
+  favorites: ["item-id-3", ...]
+}
+```
+
+Recents cap at 20. Favorites have no limit.
+
+---
+
+## FAQ
+
+**Q: Can I use Lucide icons instead of Phosphor?**  
+A: Yes! Swap the icon type in `LauncherItem`:
+
+```ts
+import { Icon } from "lucide-react";
+
+interface LauncherItem {
+  icon: Icon; // Change from PhosphorIcon
+  // ...
+}
+```
+
+**Q: How do I add keyboard shortcuts to items?**  
+A: Use the `prefixes` field:
+
+```ts
+{
+  id: "new-file",
+  name: "New File",
+  prefixes: ["/new", "⌘N"],
+  // ...
+}
+```
+
+**Q: Can I disable favorites?**  
+A: Remove `__favorites` from your categories array.
+
+**Q: How do I add loading states?**  
+A: Extend the store with a custom `loading` state:
+
+```tsx
+interface ExtendedLauncherState extends LauncherState {
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
+}
+```
+
+---
+
+## Live Demo
+
+https://launcher.tunajam.com
+
+## License
+
+MIT

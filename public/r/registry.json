@@ -1,0 +1,53 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "tunajam",
+  "homepage": "https://launcher.tunajam.com",
+  "items": [
+    {
+      "name": "launcher",
+      "type": "registry:block",
+      "title": "Launcher",
+      "description": "A Raycast-style ⌘K command launcher with hierarchical drill-down, fuzzy search, sidebar categories, recents, and favorites. Built on shadcn Command + Dialog primitives with Zustand state management.",
+      "dependencies": ["zustand", "fuse.js", "@phosphor-icons/react"],
+      "registryDependencies": ["command", "dialog", "badge", "separator"],
+      "files": [
+        {
+          "path": "registry/new-york/launcher/launcher.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/new-york/launcher/components/launcher.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/new-york/launcher/components/launcher-input.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/new-york/launcher/components/launcher-sidebar.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/new-york/launcher/components/launcher-results.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/new-york/launcher/components/launcher-footer.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "registry/new-york/launcher/lib/launcher-store.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "registry/new-york/launcher/lib/launcher-types.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "registry/new-york/launcher/lib/launcher-search.ts",
+          "type": "registry:lib"
+        }
+      ]
+    }
+  ]
+}

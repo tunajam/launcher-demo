@@ -1,0 +1,214 @@
+# Launcher — shadcn Composition
+
+> A Raycast-style ⌘K command launcher for complex ecosystems. Built on shadcn primitives (Command, Dialog, Badge, Separator) with Zustand state management.
+
+## Install
+
+```bash
+npx shadcn add https://launcher.tunajam.com/r/launcher.json
+```
+
+## Dependencies
+- zustand (state management)
+- fuse.js (fuzzy search)
+- @phosphor-icons/react (icons)
+- shadcn: command, dialog, badge, separator
+
+## Quick Start
+
+```tsx
+// 1. Define your manifest
+const manifest: LauncherItem[] = [
+  {
+    id: "teams",
+    name: "Teams",
+    description: "Manage your teams",
+    icon: Users,
+    category: "Apps",
+    tags: ["people", "teams"],
+    children: [
+      {
+        id: "teams-my",
+        name: "My Teams",
+        description: "Your team memberships",
+        icon: User,
+        category: "Apps",
+        tags: ["my", "teams"],
+      },
+    ],
+  },
+];
+
+// 2. Create the store
+const useLauncherStore = createLauncherStore({ manifest });
+
+// 3. Add to your layout
+<Launcher store={useLauncherStore} />
+```
+
+## LauncherItem Type
+
+```ts
+interface LauncherItem {
+  id: string;
+  name: string;
+  description?: string;
+  icon: PhosphorIcon;
+  category: string;
+  tags: string[];
+  aliases?: string[];
+  keywords?: string[];
+  prefixes?: string[];
+  children?: LauncherItem[];
+  action?: () => void;
+  url?: string;
+}
+```
+
+## Features
+- ⌘K to open/close
+- Hierarchical drill-down with breadcrumbs
+- Fuzzy search (weighted: name > aliases > keywords > tags > description)
+- Sidebar category filtering
+- Recents & favorites (localStorage persistence)
+- Full keyboard navigation (arrows, Enter, Escape, Backspace)
+- Escape pops back one level, closes at root
+- Selecting from favorites reconstructs full navigation path
+- Pure shadcn tokens — inherits your theme
+- Zustand store with selectors for optimal re-renders
+
+## Keyboard Shortcuts
+| Key | Action |
+|-----|--------|
+| ⌘K / Ctrl+K | Toggle launcher |
+| ↑↓ | Navigate results |
+| Enter | Select / drill into |
+| Escape | Go back / close |
+| Backspace (empty) | Pop breadcrumb level |
+
+## Customization
+- Override sidebar categories by passing a custom `categories` array
+- Override search weights via store configuration
+- All styling uses shadcn tokens — works with any theme
+- Icons use @phosphor-icons/react — swap to lucide or any icon library
+
+## Example with Custom Categories
+
+```tsx
+import { 
+  Launcher, 
+  createLauncherStore, 
+  type Category 
+} from "@/registry/new-york/launcher/launcher";
+import { SquaresFour, Folder, Settings } from "@phosphor-icons/react";
+
+const categories: Category[] = [
+  { id: "all", name: "All", icon: SquaresFour },
+  { id: "__recent", name: "Recent", icon: ClockCounterClockwise },
+  { id: "__favorites", name: "Favorites", icon: Star },
+  { isDivider: true },
+  { id: "Files", name: "Files", icon: Folder },
+  { id: "Settings", name: "Settings", icon: Settings },
+];
+
+const useLauncherStore = createLauncherStore({ manifest });
+
+<Launcher store={useLauncherStore} categories={categories} />
+```
+
+## Example with Custom Branding
+
+```tsx
+import { Launcher, createLauncherStore } from "@/registry/new-york/launcher/launcher";
+import { Rocket } from "@phosphor-icons/react";
+
+const branding = {
+  icon: <Rocket size={12} weight="fill" className="text-primary/40" />,
+  label: "my-app",
+};
+
+const useLauncherStore = createLauncherStore({ manifest });
+
+<Launcher store={useLauncherStore} branding={branding} />
+```
+
+## Advanced: Custom Search Weights
+
+```tsx
+import { createLauncherStore } from "@/registry/new-york/launcher/launcher";
+
+const useLauncherStore = createLauncherStore({
+  manifest,
+  searchWeights: {
+    name: 4.0,
+    aliases: 3.0,
+    keywords: 2.0,
+    tags: 1.5,
+    description: 0.3,
+  },
+});
+```
+
+## Store API
+
+The store returned by `createLauncherStore()` exposes:
+
+```ts
+interface LauncherState {
+  // State
+  open: boolean;
+  query: string;
+  selectedCategory: string | null;
+  navigationStack: NavigationLevel[];
+  recents: string[];
+  favorites: string[];
+
+  // Actions
+  setOpen: (open: boolean) => void;
+  setQuery: (query: string) => void;
+  setSelectedCategory: (category: string | null) => void;
+  selectItem: (item: LauncherItem) => void;
+  pushNavigation: (item: LauncherItem) => void;
+  popNavigation: () => void;
+  resetNavigation: () => void;
+  toggleFavorite: (id: string) => void;
+  setNavigationStack: (updater) => void;
+
+  // Computed
+  getBreadcrumbs: () => string[];
+  getDisplayResults: () => LauncherItem[];
+}
+```
+
+## Persistence
+
+Recents and favorites are automatically persisted to localStorage. Default key: `launcher-storage`.
+
+Override with:
+
+```tsx
+const useLauncherStore = createLauncherStore({ 
+  manifest,
+  persistKey: "my-app-launcher" 
+});
+```
+
+## Testing
+
+The store disables localStorage persistence when `NODE_ENV === "test"` for deterministic testing.
+
+## Architecture
+
+- **State management:** Zustand with persist middleware
+- **Search:** Fuse.js with configurable weights
+- **UI:** shadcn Command + Dialog (cmdk under the hood)
+- **Icons:** @phosphor-icons/react
+- **Styling:** Tailwind CSS with shadcn tokens
+
+## Live Demo
+
+https://launcher.tunajam.com
+
+## License
+
+MIT
