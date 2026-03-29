@@ -10,10 +10,11 @@ Built on shadcn primitives (Command, Dialog, Badge, Separator) with Zustand stat
 
 ✨ **Hierarchical Navigation** — Unlimited drill-down with breadcrumbs  
 🔍 **Fuzzy Search** — Weighted search across name, aliases, keywords, tags, and description  
+🏷️ **Prefix Filters** — Type `nfl:` to scope search to a category. Deep search spans all descendants  
 📌 **Favorites & Recents** — Quick access to frequently used items  
 ⌨️ **Full Keyboard Control** — Arrow navigation, Enter to select, Escape to go back  
 🎨 **Themeable** — Pure shadcn tokens, inherits your design system  
-🧪 **Tested** — 46 tests (Vitest + Playwright)  
+🧪 **Tested** — 19 unit + 23 E2E tests  
 📦 **Zero Config** — Drop in and go
 
 ## Live Demo
