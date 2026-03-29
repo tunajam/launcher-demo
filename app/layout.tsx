@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { LauncherProvider } from "@/components/launcher-context";
-import { Launcher } from "@/components/launcher";
+import { Launcher } from "@/components/launcher/launcher";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Sports Launcher Demo",
@@ -18,12 +17,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
+    <html lang="en" className={cn("dark font-sans", geist.variable)}>
       <body>
-        <LauncherProvider>
-          {children}
-          <Launcher />
-        </LauncherProvider>
+        {children}
+        <Launcher />
       </body>
     </html>
   );

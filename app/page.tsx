@@ -1,67 +1,61 @@
 "use client";
 
-import { useLauncher } from "@/components/launcher-context";
+import { useLauncherStore } from "@/lib/launcher-store";
+import { Button } from "@/components/ui/button";
 import { Diamond } from "@phosphor-icons/react";
 
 export default function Home() {
-  const { setOpen } = useLauncher();
+  const setOpen = useLauncherStore((s) => s.setOpen);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-8 relative overflow-hidden">
-      {/* Subtle grid background */}
-      <div className="absolute inset-0 opacity-[0.04]">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 1px 1px, rgba(75,156,211,0.4) 1px, transparent 0)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 text-center space-y-8 max-w-xl">
+    <main className="min-h-screen flex flex-col items-center justify-center px-8">
+      <div className="text-center space-y-8 max-w-xl">
         <div className="flex items-center justify-center gap-3 mb-6">
-          <Diamond size={40} weight="fill" className="text-carolina/60" />
-          <h1 className="text-5xl font-serif text-[#e0f2fe]">
+          <Diamond size={36} weight="fill" className="text-primary/60" />
+          <h1 className="text-5xl font-bold tracking-tight">
             Sports Launcher
           </h1>
         </div>
 
-        <p className="text-[#5b8a9e] text-lg leading-relaxed">
-          A Raycast-style command launcher built with Next.js, shadcn/ui, and cmdk.
-          Drill into leagues, teams, and stats with keyboard-first navigation.
+        <p className="text-muted-foreground text-lg leading-relaxed">
+          A Raycast-style command launcher built with Next.js, shadcn/ui, and
+          cmdk. Drill into leagues, teams, and stats with keyboard-first
+          navigation.
         </p>
 
-        <button
+        <Button
+          variant="outline"
+          size="lg"
           onClick={() => setOpen(true)}
-          className="group inline-flex items-center gap-3 px-6 py-3 bg-carolina/10 border border-carolina/20 text-carolina hover:bg-carolina/15 hover:border-carolina/30 transition-all cursor-pointer"
+          className="gap-3"
         >
-          <span className="text-sm font-medium">Open Launcher</span>
-          <kbd className="text-[11px] font-mono px-2 py-1 bg-carolina/10 border border-carolina/15 text-carolina/70">
+          Open Launcher
+          <kbd className="px-2 py-0.5 text-[11px] font-mono bg-muted text-muted-foreground border border-border">
             ⌘K
           </kbd>
-        </button>
+        </Button>
 
-        <div className="pt-8 grid grid-cols-2 gap-4 text-left text-[13px] text-[#3d7a6e]">
+        <div className="pt-8 grid grid-cols-2 gap-6 text-left text-sm text-muted-foreground">
           <div className="space-y-2">
-            <p className="text-[#5b8a9e] font-medium text-xs uppercase tracking-wider">Navigation</p>
+            <p className="text-foreground font-medium text-xs uppercase tracking-wider">
+              Navigation
+            </p>
             <p>▸ Drill into leagues → teams → stats</p>
             <p>▸ Breadcrumb trail with click-back</p>
             <p>▸ Escape pops back one level</p>
           </div>
           <div className="space-y-2">
-            <p className="text-[#5b8a9e] font-medium text-xs uppercase tracking-wider">Search</p>
+            <p className="text-foreground font-medium text-xs uppercase tracking-wider">
+              Search
+            </p>
             <p>▸ Fuzzy weighted search across all data</p>
-            <p>▸ Prefix filters — type "nfl:" to scope</p>
-            <p>▸ Recents & favorites persist locally</p>
+            <p>▸ Prefix filters — type &quot;nfl:&quot; to scope</p>
+            <p>▸ Recents &amp; favorites persist locally</p>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="absolute bottom-6 text-[11px] font-mono text-[#0a2e1f]">
+      <div className="absolute bottom-6 text-xs font-mono text-muted-foreground/40">
         Built by Tunajam — shadcn composition demo
       </div>
     </main>
