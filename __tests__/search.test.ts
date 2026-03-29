@@ -103,6 +103,36 @@ describe("manifest", () => {
     });
   });
 
+  // Prefix filter tests
+  it("filters by prefix 'nfl:' to show NFL teams", () => {
+    const results = searchItems("nfl:", manifest);
+    // Should return NFL children (teams)
+    expect(results.length).toBeGreaterThan(0);
+    results.forEach((r) => {
+      expect(r.category).toBe("NFL");
+    });
+  });
+
+  it("filters and searches with prefix 'nfl:panthers'", () => {
+    const results = searchItems("nfl:panthers", manifest);
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0].name).toBe("Carolina Panthers");
+  });
+
+  it("prefix 'nba:' scopes to NBA teams", () => {
+    const results = searchItems("nba:", manifest);
+    expect(results.length).toBeGreaterThan(0);
+    results.forEach((r) => {
+      expect(r.category).toBe("NBA");
+    });
+  });
+
+  it("unknown prefix falls back to regular search", () => {
+    const results = searchItems("xyz:test", manifest);
+    // Should not crash, just search normally
+    expect(Array.isArray(results)).toBe(true);
+  });
+
   it("college teams have sport sub-categories", () => {
     const college = manifest.find((m) => m.id === "college");
     const michigan = college?.children?.find((c) => c.id === "college-michigan");

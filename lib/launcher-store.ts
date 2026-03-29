@@ -2,7 +2,7 @@ import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 import type { LauncherItem, NavigationLevel } from "./types";
 import { manifest, getAllItems } from "./manifest";
-import { searchItems } from "./search";
+import { searchItems, flattenItems } from "./search";
 
 function buildNavigationPath(targetItem: LauncherItem): NavigationLevel[] {
   const path: NavigationLevel[] = [{ item: null, results: manifest }];
@@ -164,7 +164,13 @@ const storeDefinition: StateCreator<LauncherState, [], []> = (set, get) => ({
         .map((id) => allItems.find((i) => i.id === id))
         .filter(Boolean) as LauncherItem[];
     }
-    if (query.trim()) return searchItems(query, baseResults);
+    if (query.trim()) {
+      // When drilled down, search all descendants (not just immediate children)
+      const searchPool = currentLevel.item
+        ? flattenItems(baseResults)
+        : baseResults;
+      return searchItems(query, searchPool);
+    }
     if (selectedCategory && currentLevel.item === null)
       return baseResults.filter((i) => i.category === selectedCategory);
     return baseResults;
