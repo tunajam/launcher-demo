@@ -28,9 +28,14 @@ export function getPrefixConfig(prefix: AsyncPrefix) {
   return prefixConfig[prefix];
 }
 
+function baseUrl(): string {
+  if (typeof window !== "undefined") return "";
+  return process.env.TEST_BASE_URL ?? "http://localhost:3000";
+}
+
 export async function searchGithub(query: string): Promise<AsyncSearchResult> {
   const start = performance.now();
-  const res = await fetch(`/api/github/search?q=${encodeURIComponent(query)}`);
+  const res = await fetch(`${baseUrl()}/api/github/search?q=${encodeURIComponent(query)}`);
   const data = await res.json();
   const timing = performance.now() - start;
 
@@ -49,7 +54,7 @@ export async function searchGithub(query: string): Promise<AsyncSearchResult> {
 
 export async function searchNpm(query: string): Promise<AsyncSearchResult> {
   const start = performance.now();
-  const res = await fetch(`/api/npm/search?q=${encodeURIComponent(query)}`);
+  const res = await fetch(`${baseUrl()}/api/npm/search?q=${encodeURIComponent(query)}`);
   const data = await res.json();
   const timing = performance.now() - start;
 
@@ -68,7 +73,7 @@ export async function searchNpm(query: string): Promise<AsyncSearchResult> {
 
 export async function searchMovies(query: string): Promise<AsyncSearchResult> {
   const start = performance.now();
-  const res = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}`);
+  const res = await fetch(`${baseUrl()}/api/movies/search?q=${encodeURIComponent(query)}`);
   const data = await res.json();
   const timing = performance.now() - start;
 
