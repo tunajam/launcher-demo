@@ -98,6 +98,12 @@ export default function Home() {
                 ⌘K
               </kbd>
             </Button>
+            <a href="/async">
+              <Button variant="outline" size="lg" className="gap-2">
+                <ArrowRight size={16} />
+                Async Demo
+              </Button>
+            </a>
             <a
               href="https://github.com/tunajam/launcher-demo"
               target="_blank"
